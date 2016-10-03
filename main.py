@@ -30,5 +30,19 @@ def extractText(fileName):
     fi.close()
     return text
 
+def imageSwap(fileName):
+    fi = open(fileName, 'rb')
+    fo = open(fileName + ".swp", 'wb')
+
+    fo.write(fi.read(54))
+    for c in fi.read():
+        pixelCode = bin(c)[2:].zfill(8)
+        newCode = pixelCode[4:8] + pixelCode[0:4]
+        fo.write(int(newCode, 2).to_bytes(1, 'big'))
+    fo.write(fi.read())
+    fo.close()
+    fi.close()
+
 hideText("img.bmp", "hello!")
-print(extractText("out"))
+imageSwap("img.bmp")
+imageSwap("img.bmp.swp")

@@ -85,3 +85,19 @@ def binaireVersTexte(binaire):
     for i in range(len(binaire) // 8):
         s += chr(int(binaire[8*i:8*(i+1)], 2))
     return s
+
+def fichierVersBinaire(nomFichier):
+    f = open(nomFichier, 'rb')
+    s = ""
+    binaire = f.read()
+    for i in range(len(binaire)):
+        s += bin(binaire[i])[2:].zfill(8)
+    f.close()
+    return s
+
+def binaireVersFichier(nomFichier, binaire):
+    f = open(nomFichier, 'wb')
+    for i in range(len(binaire) // 8):
+        octet = int(binaire[8*i:8*(i+1)], 2)
+        f.write(octet.to_bytes(1, 'little'))
+    f.close()

@@ -1,26 +1,41 @@
 from scipy.misc import *
 from numpy import binary_repr
 
-def cacherDansImage(nom_fichier, message, bits_utilises):
+def cacher_dans_image(nom_fichier, message, bits_utilises):
+    # message doit être une chaîne de caractères sous forme binaire
+    # bits_utilises indique le nombre de bits LSB utilisés pour cacher le message
     t = imread(nom_fichier)
-    i_message = 0
+    # t est la matrice des pixels, chaque pixel étant un tableau [R, G, B]
+
+    # On code d'abord bits_utilises dans le fichiers sur 6 bits répartis
+    # sur les 3 valeurs RGB du premier pixel.
     b = binary_repr(bits_utilises, 6)
     for i in range(3):
         code_pixel = binary_repr(t[0][0][i], 8)
         t[0][0][i] = int(code_pixel[0:6] + b[2*i:2*i+2], 2)
+
+    # On code ensuite le nombre d'octets du message sur 30 bits répartis
+    # sur les 5 pixels suivants de la première ligne.
     nb_octets = binary_repr(len(message) // 8, 30)
     for i in range(1, 6):
         for j in range(3):
             code_pixel = binary_repr(t[0][i][j], 8)
             indice = 6*(i-1) + (2*j)
             t[0][i][j] = int(code_pixel[0:6] + nb_octets[indice:indice+2], 2)
-    nb_octets = int(nb_octets, 2)
+    nb_octets = int(nb_octets, 2) # On convertit nb_octets en entier
+
+    # On veut s'assurer que le dernier morceau du message à coder ne pose pas de
+    # problème même si bits_utilises ne divise pas 8 (taille d'un octet).
+    # Pour cela on ajoute suffisament de "0" à la fin de message.
     message += bits_utilises * "0"
-    fin_message = False
+
+    # On code maintenant message en utilisant bits_utilises LSB pour chaque
+    # valeur de t[i].
+    i_message = 0 # Compte le nombre de bits de message codés
     i = 1
-    while not fin_message and i < len(t):
+    while (i_message < nb_octets * 8) and i < len(t):
         j = 0
-        while not fin_message and j < len(t[0]):
+        while (i_message < nb_octets * 8) and j < len(t[0]):
             k = 0
             while not fin_message and k < 3:
                 code_pixel = binary_repr(t[i][j][k], 8)
@@ -28,45 +43,47 @@ def cacherDansImage(nom_fichier, message, bits_utilises):
                                message[i_message:i_message+bits_utilises]
                 t[i][j][k] = int(nouveau_code, 2)
                 i_message += bits_utilises
-                fin_message = (i_message >= nb_octets * 8)
                 k += 1
             j += 1
         i += 1
-    imsave("imgCode.png", t)
+    imsave("imgCode.png", t) # Ecriture de l'image modifiée
 
-def extraireDepuisImage(nom_fichier):
+def extraire_depuis_image(nom_fichier):
     t = imread(nom_fichier)
+
+    # Récupération de bits_utilises
     bits_utilises = ""
     for i in range(3):
         code_pixel = binary_repr(t[0][0][i], 8)
-        bits_utilises += code_pixel[6:8]
+        bits_utilises += code_pixel[6:8] # On récupère les 2 derniers bits
     bits_utilises = int(bits_utilises, 2)
+
+    # Récupération de nb_octets
     nb_octets = ""
     for i in range(1, 6):
         for j in range(3):
             code_pixel = binary_repr(t[0][i][j], 8)
-            nb_octets += code_pixel[6:8]
+            nb_octets += code_pixel[6:8] # On récupère les 2 derniers bits
     nb_octets = int(nb_octets, 2)
+
+    # Récupération de message
     message = ""
     i_message = 0
-    fin_message = False
     i = 1
-    while not fin_message and i < len(t):
+    while (i_message < nb_octets * 8) and i < len(t):
         j = 0
-        while not fin_message and j < len(t[0]):
+        while (i_message < nb_octets * 8) and j < len(t[0]):
             k = 0
             while not fin_message and k < 3:
                 code_pixel = binary_repr(t[i][j][k], 8)
                 message += code_pixel[8-bits_utilises:]
                 i_message += bits_utilises
-                fin_message = (i_message >= nb_octets * 8)
                 k += 1
             j += 1
         i +=1
-    return message[:nb_octets*8]
+    return message[:nb_octets*8] # On ignore les derniers bits récupérés en trop
 
-
-def detectionStegano(nom_fichier):
+def detection_stegano(nom_fichier):
     t = imread(nom_fichier)
     for i in range(len(t)):
         for j in range(len(t[0])):

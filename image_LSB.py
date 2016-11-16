@@ -20,6 +20,9 @@ def cacher_dans_image(nom_fichier, message, bits_utilises):
     for i in range(1, 6):
         for j in range(3):
             code_pixel = binary_repr(t[0][i][j], 8)
+            # Chaque pixel code 6 bits de nb_octets, 2 bits par valeur RGB.
+            # A la jeme composante RGB du ieme pixels on a donc déjà codé
+            # (i-1)*6 + (2*j) bits de nb_octets (i commence à 1).
             indice = 6*(i-1) + (2*j)
             t[0][i][j] = int(code_pixel[0:6] + nb_octets[indice:indice+2], 2)
     nb_octets = int(nb_octets, 2) # On convertit nb_octets en entier
@@ -30,9 +33,9 @@ def cacher_dans_image(nom_fichier, message, bits_utilises):
     message += bits_utilises * "0"
 
     # On code maintenant message en utilisant bits_utilises LSB pour chaque
-    # valeur de t[i].
+    # valeur RGB des pixels.
     i_message = 0 # Compte le nombre de bits de message codés
-    i = 1
+    i = 1 # On commence à partir de la deuxième ligne de pixels
     while (i_message < nb_octets * 8) and i < len(t):
         j = 0
         while (i_message < nb_octets * 8) and j < len(t[0]):
@@ -76,6 +79,7 @@ def extraire_depuis_image(nom_fichier):
             k = 0
             while not fin_message and k < 3:
                 code_pixel = binary_repr(t[i][j][k], 8)
+                # On récupère les bits_utilises derniers bits
                 message += code_pixel[8-bits_utilises:]
                 i_message += bits_utilises
                 k += 1

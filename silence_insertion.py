@@ -20,7 +20,7 @@ ndtype=int(dtypemode[3:])
 def est_silence(t,num,dtypemode) :
     ndtype=int(dtypemode[3:])
     return abs(t[num]/(2**ndtype)) < 1/100
-    
+
 #renvoie la liste des silences : num de début et de fin
 def liste_silences(t,dtypemode) :
     l=[]
@@ -35,7 +35,7 @@ def liste_silences(t,dtypemode) :
             else :
                 b = False
     return l
-    
+
 #len(lgaulle)=239476
 
 def silences_longs(l,lenminsilences) :
@@ -66,7 +66,7 @@ def liste_silences_longs(t,lenminsilences,dtypemode) :
                     sil=[0,0]
                 b = False
     return l
-    
+
 def num_est_ds_liste(i,l2) : #indique si i est le début d'un silence dans l2 liste des intervalles et l'indice dans l2
     n=len(l2)
     j=0
@@ -127,9 +127,9 @@ def coder_ds_wav(nomfichier,txtcode,nbitcodage,dtypemode) :
         return True
     else :
         return False
-        
+
 #coder_ds_wav('discours1(5s).wav',txt,1,'int16')
-    
+
 def decoder_depuis_wav(fichiercode,nbitcodage,dtypemode) :
     ndtype=int(dtypemode[3:])
     lenmin = len_min_silences(nbitcodage) #les silences modifiés seront toujours ok les autres (non modifiés) sont toujours invalides pour le codage
@@ -146,9 +146,9 @@ def decoder_depuis_wav(fichiercode,nbitcodage,dtypemode) :
     lentxt=int(chaine[0:30],2)
     #return chaine[30:30+lentxt]
     return chaine[0:300]
-        
-    
-    
+
+
+
 #In [41]: np.concatenate((np.array([5,8,10,12]),np.array([2,4,8,10])),axis=0)
 #Out[41]: array([ 5,  8, 10, 12,  2,  4,  8, 10])
 #In [23]: wavfile.write("data",44100,np.array([4,8,10]))

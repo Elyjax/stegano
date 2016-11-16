@@ -42,9 +42,29 @@ def silences_longs(l,lenminsilences) :
     i=0
     l2=[]
     while i < len(l) :
-        if l[i][1]-l[i][0]+1 < lenminsilences :
+        if (l[i][1]-l[i][0]+1) >= lenminsilences :
             l2.append(l[i])
         i=i+1
+    return l2
+    
+def liste_silences_longs(t,lenminsilences,dtypemode) :
+    l=[]
+    b=False
+    len=0
+    sil=[0,0]
+    for i in range(0,len(t)) :
+        if not b and est_silence(t,i,dtypemode) :
+            sil[0]=i
+            len=len+1
+            b = True
+        else :
+            if est_silence(t,i,dtypemode) :
+                sil[1]=i
+            else :
+                if (sil[1]-sil[0]+1) >= lenminsilences :
+                    l.append(sil)
+                    sil=[0,0]
+                b = False
     return l
     
 def num_est_ds_liste(i,l2) : #indique si i est le début d'un silence dans l2 liste des intervalles et l'indice dans l2
@@ -76,16 +96,17 @@ def coder_ds_wav(nomfichier,txtcode,nbitcodage,dtypemode) :
         chainecodee=binlentxt+txtcode #chaine totale à coder
         #reste=len(chainecodee)%(2**nbitcodage) 
         #nmax=(len(chainecodee)-reste)/(2**nbitcodage)
-        data=np.array([],dtype='int16') #array du son modifié
+        data=np.array([],dtype=dtypemode) #array du son modifié
         n=len(t)
         i=0
+        i2=0
         while i<n :
-            (bool,indicel2)=num_est_ds_liste(i,l2)
+            (bool,indicel2)=num_est_ds_liste(i,l2) #début de silence suffisamment long?
             if bool :
-                chainecodeel2=chainecodee[indicel2:indicel2+(2**nbitcodage)]
-                if chainecodeel2 != '' :
-                    x=int(chainecodeel2,2)
-                    lensilencel2=l2[indicel2][1]-l2[indicel2][0]+1
+                chainecodeei2=chainecodee[i2:i2+(2**nbitcodage)]
+                if chainecodeei2 != '' :
+                    x=int(chainecodeei2,2)
+                    lensilencei2=l2[indicel2][1]-l2[indicel2][0]+1
                     beta=(lensilencel2)%(2**nbitcodage)
                     #if x-beta>=0 :
                     #    alpha=x-beta #nb de silences à ajouter
@@ -95,10 +116,11 @@ def coder_ds_wav(nomfichier,txtcode,nbitcodage,dtypemode) :
                     data=np.concatenate((data,np.array([0]*(lensilencel2+alpha),dtype=dtypemode)))
                     #ajout des alpha silences dans le silence
                     i=l2[indicel2][1]+1
-                else :
+                    i2=i2+1
+                else : #il n'y a plus rien à coder
                     data=np.concatenate((data,np.array([t[i]],dtype=dtypemode)))
                     i=i+1
-            else :
+            else : #ce n'est pas un début de silence
                 data=np.concatenate((data,np.array([t[i]],dtype=dtypemode)))
                 i=i+1
         wavfile.write("resultat.wav",44100,data) #data = array des silences modifiés + sons

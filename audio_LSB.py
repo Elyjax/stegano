@@ -8,6 +8,13 @@ def cacher_dans_audio(nom_fichier, message, bits_utilises):
     # bits_utilises indique le nombre de bits LSB utilisés pour cacher le message
     rate, t = wavfile.read(nom_fichier) # t contient le tableau des données audio
 
+    # On vérifie d'abord qu'il y a suffisament de places pour cacher le message.
+    # On ne compte pas les 18 premières cases utilisées pour stocker bits_utilises
+    # et nb_octets.
+    if len(message) > (len(t)-18) * bits_utilises:
+        print("Message trop long pour être caché. Tentez d'augmenter bits_utilises.")
+        return
+
     # On code d'abord bits_utilises dans le fichiers sur 6 bits répartis
     # sur les 3 premières valeurs de t.
     b = binary_repr(bits_utilises, 6)

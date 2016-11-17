@@ -7,6 +7,13 @@ def cacher_dans_image(nom_fichier, message, bits_utilises):
     t = imread(nom_fichier)
     # t est la matrice des pixels, chaque pixel étant un tableau [R, G, B]
 
+    # On vérifie d'abord qu'il y a suffisament de places pour cacher le message.
+    # On ne compte pas la première ligne de pixels utilisée pour stocker bits_utilises
+    # et nb_octets.
+    if len(message) > (len(t)-1) * len(t[0]) * 3 * bits_utilises:
+        print("Message trop long pour être caché. Tentez d'augmenter bits_utilises.")
+        return
+
     # On code d'abord bits_utilises dans le fichiers sur 6 bits répartis
     # sur les 3 valeurs RGB du premier pixel.
     b = binary_repr(bits_utilises, 6)
@@ -20,6 +27,9 @@ def cacher_dans_image(nom_fichier, message, bits_utilises):
     for i in range(1, 6):
         for j in range(3):
             code_pixel = binary_repr(t[0][i][j], 8)
+            # Chaque pixel code 6 bits de nb_octets, 2 bits par valeur RGB.
+            # A la jeme composante RGB du ieme pixels on a donc déjà codé
+            # (i-1)*6 + (2*j) bits de nb_octets (i commence à 1).
             indice = 6*(i-1) + (2*j)
             t[0][i][j] = int(code_pixel[0:6] + nb_octets[indice:indice+2], 2)
     nb_octets = int(nb_octets, 2) # On convertit nb_octets en entier
@@ -30,23 +40,23 @@ def cacher_dans_image(nom_fichier, message, bits_utilises):
     message += bits_utilises * "0"
 
     # On code maintenant message en utilisant bits_utilises LSB pour chaque
-    # valeur de t[i].
+    # valeur RGB des pixels.
     i_message = 0 # Compte le nombre de bits de message codés
-    i = 1
+    i = 1 # On commence à partir de la deuxième ligne de pixels
     while (i_message < nb_octets * 8) and i < len(t):
         j = 0
         while (i_message < nb_octets * 8) and j < len(t[0]):
             k = 0
-            while not fin_message and k < 3:
+            while (i_message < nb_octets * 8) and k < 3:
                 code_pixel = binary_repr(t[i][j][k], 8)
-                nouveau_code = code_pixel[0:8-bits_utilises] +
-                               message[i_message:i_message+bits_utilises]
+                nouveau_code = (code_pixel[0:8-bits_utilises] +
+                                message[i_message:i_message+bits_utilises])
                 t[i][j][k] = int(nouveau_code, 2)
                 i_message += bits_utilises
                 k += 1
             j += 1
         i += 1
-    imsave("imgCode.png", t) # Ecriture de l'image modifiée
+    imsave("img_code.bmp", t) # Ecriture de l'image modifiée
 
 def extraire_depuis_image(nom_fichier):
     t = imread(nom_fichier)
@@ -76,6 +86,7 @@ def extraire_depuis_image(nom_fichier):
             k = 0
             while not fin_message and k < 3:
                 code_pixel = binary_repr(t[i][j][k], 8)
+                # On récupère les bits_utilises derniers bits
                 message += code_pixel[8-bits_utilises:]
                 i_message += bits_utilises
                 k += 1

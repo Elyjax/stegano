@@ -50,7 +50,7 @@ def num_est_ds_liste(i,l2) : #indique si i est le début d'un silence dans l2 li
             return (True,j)
     return (False,0)
 
-def len_min_silences(nbitcodage) :
+def len_min_silences(nbitcodage) : 
     n=1
     while (2**nbitcodage-1)/n > 0.1 :
         n=n+1
@@ -65,30 +65,28 @@ def coder_ds_wav(nomfichier,txtcode,nbitcodage,dtypemode) :
     if len(l2) > (len(txtcode)+30)/nbitcodage : #on code sur 30 bits la longueur de txtcode
         binlentxt = np.binary_repr(len(txtcode),30) #chaine binaire de la longueur du txt sur 30 bit
         chainecodee = binlentxt+txtcode #chaine totale à coder
-        #reste=len(chainecodee)%(2**nbitcodage) 
-        #nmax=(len(chainecodee)-reste)/(2**nbitcodage)
         data = np.array([],dtype=dtypemode) #array du son modifié
         n = len(t)
-        i = 0
-        i2 = 0
+        i = 0 #parcours dans liste silence initiale
+        i2 = 0 #parcours dans chaine codee
         while i < n :
-            (bool,indicel2) = num_est_ds_liste(i,l2) #début de silence suffisamment long?
+            (bool,indicel2) = num_est_ds_liste(i,l2) #début du possible silence 
             if bool :
-                chainecodeei2 = chainecodee[i2:i2+(2**nbitcodage)]
+                chainecodeei2 = chainecodee[i2:(i2+nbitcodage)]
                 if chainecodeei2 != '' :
                     x = int(chainecodeei2,2)
                     lensilencei2 = l2[indicel2][1]-l2[indicel2][0]+1
-                    beta = (lensilencel2)%(2**nbitcodage)
+                    beta = (lensilencei2)%(2**nbitcodage)
                     alpha = 0
                     if x-beta >= 0 :
                         alpha = x-beta #nb de silences à ajouter
                     else :
                         alpha = x-beta+(2**nbitcodage)
                     alpha = x-beta
-                    data = np.concatenate((data,np.array([0]*(lensilencel2+alpha),dtype=dtypemode)))
+                    data = np.concatenate((data,np.array([0]*(lensilencei2+alpha),dtype=dtypemode)))
                     #ajout des alpha silences dans le silence
-                    i= l2[indicel2][1]+1
-                    i2 = i2+1
+                    i = l2[indicel2][1]+1
+                    i2 = i2+nbitcodage
                 else : #il n'y a plus rien à coder
                     data = np.concatenate((data,np.array([t[i]],dtype=dtypemode)))
                     i = i+1
@@ -110,15 +108,31 @@ def decoder_depuis_wav(fichiercode,nbitcodage,dtypemode) :
     l2 = liste_silences_longs(t,lenmin,dtypemode)
     n = len(l2)
     chaine = ''
+    #while len(chaine)<30 :
+    #    x = (l2[i][1]-l2[i][0]+1)%(2**nbitcodage)
+    #    chainex = np.binary_repr(x,2**nbitcodage)
+    #    chaine = chaine+chainex
+    #    i=i+1
+    #lentxt=int(chaine[0:30],2)
+    #while len(chaine)<30+lentxt :
     for i in range(0,n) :
         x = (l2[i][1]-l2[i][0]+1)%(2**nbitcodage)
         chainex = np.binary_repr(x,2**nbitcodage)
         chaine = chaine+chainex
-    lentxt = int(chaine[0:30],2)
+        #i=i+1
+    lentxt=int(chaine[0:30],2)
     #return chaine[30:30+lentxt]
-    return chaine[30:30+lentxt]
+    return chaine[0:30]
 
-
+#tests
+#txt1 = '0011001100110011'
+#r1 = '0001000100010001'
+#txt2 = '0101010101010101'
+#r2 = '0101010101010101'
+#txt3 = '1111111111111111'
+#r3 = '0101010101010101'
+#txt4 = '10011100'
+#r4 = ''
 
 #In [41]: np.concatenate((np.array([5,8,10,12]),np.array([2,4,8,10])),axis=0)
 #Out[41]: array([ 5,  8, 10, 12,  2,  4,  8, 10])

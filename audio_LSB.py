@@ -39,7 +39,7 @@ def cacher_dans_audio(nom_fichier, message, bits_utilises):
 
     # On code maintenant message en utilisant bits_utilises LSB pour chaque
     # valeur de t[i].
-    i_message = 0 # Compte le nombre de bits de message codés
+    i_message = 0 # Compte le nombre de bits de message cachés
     i = 18
     while (i_message < nb_octets * 8) and i < len(t):
         code_sample = binary_repr(t[i], bits_codage)
@@ -68,12 +68,10 @@ def extraire_depuis_audio(nom_fichier):
 
     # Récupération de message
     message = ""
-    i_message = 0
     i = 18
-    while (i_message < nb_octets * 8) and i < len(t):
+    while (len(message) < nb_octets * 8) and i < len(t):
         code_sample = binary_repr(t[i], bits_codage)
         # On récupère les bits_utilises derniers bits
         message += code_sample[bits_codage-bits_utilises:]
-        i_message += bits_utilises
         i +=1
     return message[:nb_octets*8] # On ignore les derniers bits récupérés en trop

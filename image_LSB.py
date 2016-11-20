@@ -78,17 +78,15 @@ def extraire_depuis_image(nom_fichier):
 
     # Récupération de message
     message = ""
-    i_message = 0
-    i = 1
-    while (i_message < nb_octets * 8) and i < len(t):
+    i = 1 # Le message commence à partir de la deuxième ligne de pixels
+    while (len(message) < nb_octets * 8) and i < len(t):
         j = 0
-        while (i_message < nb_octets * 8) and j < len(t[0]):
+        while (len(message) < nb_octets * 8) and j < len(t[0]):
             k = 0
             while not fin_message and k < 3:
                 code_pixel = binary_repr(t[i][j][k], 8)
                 # On récupère les bits_utilises derniers bits
                 message += code_pixel[8-bits_utilises:]
-                i_message += bits_utilises
                 k += 1
             j += 1
         i +=1

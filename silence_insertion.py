@@ -10,11 +10,8 @@ import numpy as np
 #frequence d'échantillonnage = 44100 Hz
 #période d'échantillonnage = 2.26*10^-5 s
 #écrire un wav (scipy.io.)wavfile.write(filename, rate, data)
-#dtypemode = 'int16'
-#ndtype=int(dtypemode[3:])
 
-#variable globale
-dtypemode = 'int16'
+dtypemode = 'int16' # Type utilisé par le fichier wav
 bits_nb_octets = 32 # Nombre de bits utilisés pour stocker la taille du message
 
 def est_silence(t, indice):
@@ -44,15 +41,14 @@ def modification_silence(t, i, valeur_a_cacher, nbitcodage, ongueur_silence):
 
 def cacher_dans_silences(nom_fichier, message, nbitcodage):
     f = wavfile.read(nom_fichier)
-    t = f[1] #array complet du son
+    t = f[1] # Array complet du son
     t = list(t)
     n = len(t)
     # Nombre d'octets du message à cacher représenté sur bits_nb_octets
     nb_octets = np.binary_repr(len(message) // 8, bits_nb_octets)
     message = nb_octets + message
     i = 0
-    i_message = 0
-    len_min = len_min_silences(nbitcodage)
+    i_message = 0 # Compte le nombre de bits de message cachés
     while i < n and i_message < len(message):
         if est_silence(t, i):
             longueur_silence = duree_silence(t, i)
@@ -71,11 +67,12 @@ def cacher_dans_silences(nom_fichier, message, nbitcodage):
 def extraire_depuis_silences(nom_fichier, nbitcodage):
     f = wavfile.read(nom_fichier)
     t = f[1]
-    message = ""
-    len_min = len_min_silences(nbitcodage)
     n = len(t)
+
+    # Récupération de nb_octets
+    nb_octets = ""
     i = 0
-    while len(message) < bits_nb_octets:
+    while len(nb_octets) < bits_nb_octets:
         if est_silence(t, i):
             longueur_silence = duree_silence(t, i)
             if longueur_silence >= len_min :
@@ -86,8 +83,11 @@ def extraire_depuis_silences(nom_fichier, nbitcodage):
                 i += longueur_silence
         else :
             i += 1
-    longueur_message = int(message, 2) * 8
-    while i < n and len(message) < (bits_nb_octets + longueur_message):
+    nb_octets = int(nb_octets, 2)
+
+    # Récupération du message
+    message = ""
+    while (len(message) < nb_octets * 8) and i < len(t):
         if est_silence(t, i):
             longueur_silence = duree_silence(t, i)
             if longueur_silence >= len_min :
@@ -98,7 +98,7 @@ def extraire_depuis_silences(nom_fichier, nbitcodage):
                 i += longueur_silence
         else:
             i += 1
-    return message[bits_nb_octets:]
+    return message
 
 #a=np.array([4,8,10,58,28000,-4561]) a.dtype -> dtype('int32')
 #a.astype('int16')

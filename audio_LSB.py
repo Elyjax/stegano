@@ -3,7 +3,7 @@ from scipy.io import wavfile
 
 bits_codage = 16 # Nombre de bits utilisés pour le codage du fichier wav
 
-def cacher_dans_audio(nom_fichier, message, bits_utilises):
+def cacher_dans_audio(nom_fichier, nom_resultat, message, bits_utilises):
     # message doit être une chaîne de caractères sous forme binaire
     # bits_utilises indique le nombre de bits LSB utilisés pour cacher le message
     rate, t = wavfile.read(nom_fichier) # t contient le tableau des données audio
@@ -47,7 +47,7 @@ def cacher_dans_audio(nom_fichier, message, bits_utilises):
                    message[i_message:i_message + bits_utilises], 2)
         i_message += bits_utilises
         i += 1
-    wavfile.write("audio_code.wav", rate, t) # Ecriture du fichier audio modifié
+    wavfile.write(nom_resultat, rate, t) # Ecriture du fichier audio modifié
 
 def extraire_depuis_audio(nom_fichier):
     rate, t = wavfile.read(nom_fichier)

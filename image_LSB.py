@@ -1,7 +1,7 @@
 from scipy.misc import *
 from numpy import binary_repr
 
-def cacher_dans_image(nom_fichier, message, bits_utilises):
+def cacher_dans_image(nom_fichier, nom_resultat, message, bits_utilises):
     # message doit être une chaîne de caractères sous forme binaire
     # bits_utilises indique le nombre de bits LSB utilisés pour cacher le message
     t = imread(nom_fichier)
@@ -56,7 +56,7 @@ def cacher_dans_image(nom_fichier, message, bits_utilises):
                 k += 1
             j += 1
         i += 1
-    imsave("img_code.bmp", t) # Ecriture de l'image modifiée
+    imsave(nom_resultat, t) # Ecriture de l'image modifiée
 
 def extraire_depuis_image(nom_fichier):
     t = imread(nom_fichier)
@@ -83,7 +83,7 @@ def extraire_depuis_image(nom_fichier):
         j = 0
         while (len(message) < nb_octets * 8) and j < len(t[0]):
             k = 0
-            while not fin_message and k < 3:
+            while (len(message) < nb_octets * 8) and k < 3:
                 code_pixel = binary_repr(t[i][j][k], 8)
                 # On récupère les bits_utilises derniers bits
                 message += code_pixel[8-bits_utilises:]

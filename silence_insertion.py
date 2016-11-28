@@ -20,7 +20,7 @@ def est_silence(t, indice):
 
 def len_min_silences(nbitcodage):
     n = 1
-    while (2**nbitcodage-1) / n < 0.1 :
+    while (2**nbitcodage-1) / n > 0.1 :
         n += 1
     return n
 
@@ -30,7 +30,21 @@ def duree_silence(t, i):
         k += 1
     return k - i
 
-def modification_silence(t, i, valeur_a_cacher, nbitcodage, ongueur_silence):
+def longueur_max_cachee(t, nbitcodage):
+    nb = 0
+    n = len(t)
+    i = 0
+    len_min = len_min_silences(nbitcodage)
+    while i < n :
+        longueur_silence = duree_silence(t,i)
+        if longueur_silence >= len_min :
+            nb += 1
+            i += longueur_silence
+        else :
+            i += 1
+    return nb * nbitcodage
+
+def modification_silence(t, i, valeur_a_cacher, nbitcodage, longueur_silence):
     valeur_a_cacher = int(valeur_a_cacher, 2)
     ajout_silences = valeur_a_cacher - (longueur_silence % (2**nbitcodage))
     while ajout_silences < 0:
@@ -47,12 +61,15 @@ def cacher_dans_silences(nom_fichier, message, nbitcodage):
     # Nombre d'octets du message à cacher représenté sur bits_nb_octets
     nb_octets = np.binary_repr(len(message) // 8, bits_nb_octets)
     message = nb_octets + message
+    
+    if longueur_max_cachee(t,nbitcodage) < len(message) :
+        return "le message a cacher est trop grand par rapport au fichier"
     i = 0
     i_message = 0 # Compte le nombre de bits de message cachés
     while i < n and i_message < len(message):
         if est_silence(t, i):
             longueur_silence = duree_silence(t, i)
-            if longueur_silence >= len_min :
+            if longueur_silence >= len_min_silences(nbitcodage) :
                 valeur_a_cacher = message[i_message:i_message+nbitcodage]
                 (changement, i) = modification_silence(t, i, valeur_a_cacher, nbitcodage, longueur_silence)
                 if changement:
@@ -72,12 +89,12 @@ def extraire_depuis_silences(nom_fichier, nbitcodage):
     # Récupération de nb_octets
     nb_octets = ""
     i = 0
-    while len(nb_octets) < bits_nb_octets:
+    while len(nb_octets) < bits_nb_octets :
         if est_silence(t, i):
             longueur_silence = duree_silence(t, i)
-            if longueur_silence >= len_min :
+            if longueur_silence >= len_min_silences(nbitcodage) :
                 valeur = longueur_silence % (2**nbitcodage)
-                message += np.binary_repr(valeur, nbitcodage)
+                nb_octets += np.binary_repr(valeur, nbitcodage)
                 i += longueur_silence
             else :
                 i += longueur_silence
@@ -90,7 +107,7 @@ def extraire_depuis_silences(nom_fichier, nbitcodage):
     while (len(message) < nb_octets * 8) and i < len(t):
         if est_silence(t, i):
             longueur_silence = duree_silence(t, i)
-            if longueur_silence >= len_min :
+            if longueur_silence >= len_min_silences(nbitcodage) :
                 valeur = longueur_silence % (2**nbitcodage)
                 message += np.binary_repr(valeur, nbitcodage)
                 i += longueur_silence
@@ -103,3 +120,4 @@ def extraire_depuis_silences(nom_fichier, nbitcodage):
 #a=np.array([4,8,10,58,28000,-4561]) a.dtype -> dtype('int32')
 #a.astype('int16')
 #array([    4,     8,    10,    58, 28000, -4561], dtype=int16)
+

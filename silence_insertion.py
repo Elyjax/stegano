@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import os
 import numpy as np
 
+
 #os.chdir("C:/Users/Clément/Desktop/TIPE Masquage/Code TIPE")
 #f=wavfile.read("test.wav")
 #t=f[1]
@@ -36,12 +37,15 @@ def longueur_max_cachee(t, nbitcodage):
     i = 0
     len_min = len_min_silences(nbitcodage)
     while i < n :
-        longueur_silence = duree_silence(t,i)
-        if longueur_silence >= len_min :
-            nb += 1
-            i += longueur_silence
+        if est_silence(t,i) :
+            longueur_silence = duree_silence(t,i)
+            if longueur_silence >= len_min :
+                nb += 1
+                i += longueur_silence
+            else :
+                i += longueur_silence
         else :
-            i += 1
+            i +=1
     return nb * nbitcodage
 
 def modification_silence(t, i, valeur_a_cacher, nbitcodage, longueur_silence):
@@ -59,7 +63,7 @@ def cacher_dans_silences(nom_fichier, message, nbitcodage):
     t = list(t)
     n = len(t)
     # Nombre d'octets du message à cacher représenté sur bits_nb_octets
-    nb_octets = np.binary_repr(len(message) // 8, bits_nb_octets)
+    nb_octets = np.binary_repr(len(message), bits_nb_octets) #le message n'est pas forcément codé en octets
     message = nb_octets + message
     
     if longueur_max_cachee(t,nbitcodage) < len(message) :
@@ -104,7 +108,7 @@ def extraire_depuis_silences(nom_fichier, nbitcodage):
 
     # Récupération du message
     message = ""
-    while (len(message) < nb_octets * 8) and i < len(t):
+    while (len(message) < nb_octets) and i < len(t):
         if est_silence(t, i):
             longueur_silence = duree_silence(t, i)
             if longueur_silence >= len_min_silences(nbitcodage) :
@@ -120,4 +124,56 @@ def extraire_depuis_silences(nom_fichier, nbitcodage):
 #a=np.array([4,8,10,58,28000,-4561]) a.dtype -> dtype('int32')
 #a.astype('int16')
 #array([    4,     8,    10,    58, 28000, -4561], dtype=int16)
+
+## Analyse statistique
+
+def statmodulo(nom_fichier,nbitcodage):
+    n_modulo=2**nbitcodage
+    (x,y)=([0]*n_modulo,[0]*n_modulo)
+    for k in range (0,n_modulo) :
+        x[k]=k
+    
+    f = wavfile.read(nom_fichier)
+    t = f[1]
+    n = len(t)
+
+    i = 0
+    while i < n :
+        if est_silence(t, i):
+            longueur_silence = duree_silence(t, i)
+            if longueur_silence >= len_min_silences(nbitcodage) :
+                valeur = longueur_silence % (2**nbitcodage)
+                y[valeur] += 1
+                i += longueur_silence
+            else :
+                i += longueur_silence
+        else :
+            i += 1
+    return (x,y)
+
+#longueur_max_cachee((wavfile.read("discours1(30).wav"))[1],8)
+#Out[57]: 48
+
+#In [58]: longueur_max_cachee((wavfile.read("discours1(30).wav"))[1],4)
+#Out[58]: 1504
+
+#In [59]: longueur_max_cachee((wavfile.read("discours1(30).wav"))[1],2)
+#Out[59]: 7220    
+
+#statmodulo("discours1(30).wav",2)
+#Out[78]: ([0, 1, 2, 3], [824, 892, 948, 946])
+
+#statmodulo("discours1(30).wav",4)
+#Out[47]: 
+#([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+#[19, 22, 20, 26, 32, 32, 31, 25, 17, 24, 22, 28, 17, 22, 17, 22])
+
+
+
+
+
+
+
+
+
 

@@ -1,4 +1,5 @@
 from numpy import binary_repr
+from random import randint
 
 def texte_vers_binaire(texte):
     s = ""
@@ -27,3 +28,9 @@ def binaire_vers_fichier(nom_fichier, binaire):
         octet = int(binaire[8*i:8*(i+1)], 2)
         f.write(octet.to_bytes(1, 'little'))
     f.close()
+
+def chaine_chr_aleatoire(n):
+    chaine = ""
+    for k in range (0,n):
+        chaine = chaine + chr(randint(0,255))
+    return chaine

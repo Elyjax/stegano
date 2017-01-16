@@ -92,7 +92,7 @@ def extraire_depuis_image(nom_fichier):
         i +=1
     return message[:nb_octets*8] # On ignore les derniers bits récupérés en trop
 
-def detection_stegano(nom_fichier):
+def detection_stegano(nom_fichier, nom_resultat):
     t = imread(nom_fichier)
     for i in range(len(t)):
         for j in range(len(t[0])):
@@ -101,4 +101,4 @@ def detection_stegano(nom_fichier):
                     t[i][j][k] = 0
                 else:
                     t[i][j][k] = 255
-    imsave("detection.bmp", t)
+    imsave(nom_resultat, t)

@@ -1,1 +1,6 @@
 __pycache__
+*.wav
+*.bmp
+*.png
+*.jpeg
+*.out

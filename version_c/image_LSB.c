@@ -2,12 +2,17 @@
 #include <stdio.h>
 #include <string.h>
 
-void cacher_dans_image(char *nom_fichier, char *nom_resultat, char *message, int bits_utilises)
+void cacher_dans_image(char *nom_fichier_hote, char *nom_fichier_resultat,
+                       char *message, int nb_octets_message, int bits_utilises)
 {
-    FILE *fichier = fopen(nom_fichier, "rb");
+    if (bits_utilises > 8) {
+        printf("bits_utilises doit être inférieur à 8\n");
+        return;
+    }
 
-    if (fichier == NULL) {
-        fclose(fichier);
+    FILE *hote = fopen(nom_fichier_hote, "rb");
+    if (hote == NULL) {
+        printf("Fichier inexistant\n");
         return;
     }
 
@@ -15,30 +20,28 @@ void cacher_dans_image(char *nom_fichier, char *nom_resultat, char *message, int
     int colonnes = 0;
     int lignes = 0;
     int offset = 0;
-    fseek(fichier, 0xa, SEEK_SET);
-    fread(&offset, 4, 1, fichier);
-    fseek(fichier, 0x12, SEEK_SET);
-    fread(&colonnes, 4, 1, fichier);
-    fread(&lignes, 4, 1, fichier);
-    fseek(fichier, 0x1c, SEEK_SET);
-    fread(&bits_par_pixel, 2, 1, fichier);
+    fseek(hote, 0xa, SEEK_SET);
+    fread(&offset, 4, 1, hote);
+    fseek(hote, 0x12, SEEK_SET);
+    fread(&colonnes, 4, 1, hote);
+    fread(&lignes, 4, 1, hote);
+    fseek(hote, 0x1c, SEEK_SET);
+    fread(&bits_par_pixel, 2, 1, hote);
 
     int octets_par_pixel = bits_par_pixel / 8;
     int octets_par_ligne = colonnes * octets_par_pixel;
     if (octets_par_ligne  % 4 != 0)
         octets_par_ligne = ((octets_par_ligne / 4) + 1) * 4;
     int taille = octets_par_ligne * lignes;
-    int nb_octets_message = strlen(message);
 
     if (nb_octets_message * 8 > (taille - 19) * bits_utilises) {
         printf("Message trop long pour être caché. Tentez d'augmenter bits_utilises.");
         return;
     }
 
-    unsigned char *t = NULL;
-    t = malloc(taille);
-    fseek(fichier, offset, SEEK_SET);
-    fread(t, 1, taille, fichier);
+    char *t = malloc(taille);
+    fseek(hote, offset, SEEK_SET);
+    fread(t, 1, taille, hote);
 
     for (int i = 0; i < 3; i++) {
         t[i] &= 0b11111100;
@@ -50,7 +53,9 @@ void cacher_dans_image(char *nom_fichier, char *nom_resultat, char *message, int
         t[i + 3] |= (nb_octets_message & (0b11 << (2 * i))) >> (2 * i);
     }
 
-    int i = 19, i_message = 0, i_octet = 0;
+    int i = 19;
+    int i_message = 0;
+    int i_octet = 0;
     char octet_message = message[0];
     char masque = 0b11111111 << bits_utilises;
     while (i_message < nb_octets_message) {
@@ -69,24 +74,23 @@ void cacher_dans_image(char *nom_fichier, char *nom_resultat, char *message, int
         i++;
     }
 
-    FILE *resulat = fopen(nom_resultat, "wb");
+    FILE *resultat = fopen(nom_fichier_resultat, "wb");
     char header[offset];
-    fseek(fichier, 0, SEEK_SET);
-    fread(header, 1, offset, fichier);
-    fwrite(header, 1, offset, resulat);
-    fwrite(t, 1, taille, resulat);
+    fseek(hote, 0, SEEK_SET);
+    fread(header, 1, offset, hote);
+    fwrite(header, 1, offset, resultat);
+    fwrite(t, 1, taille, resultat);
 
-    fclose(resulat);
-    fclose(fichier);
+    fclose(hote);
+    fclose(resultat);
     free(t);
 }
 
-void extraire_depuis_image(char *nom_fichier)
+char* extraire_depuis_image(char *nom_fichier_hote, int *nb_octets_message)
 {
-    FILE *fichier = fopen(nom_fichier, "rb");
-
-    if (fichier == NULL) {
-        fclose(fichier);
+    FILE *hote = fopen(nom_fichier_hote, "rb");
+    if (hote == NULL) {
+        printf("Fichier inexistant\n");
         return;
     }
 
@@ -94,13 +98,13 @@ void extraire_depuis_image(char *nom_fichier)
     int colonnes = 0;
     int lignes = 0;
     int offset = 0;
-    fseek(fichier, 0xa, SEEK_SET);
-    fread(&offset, 4, 1, fichier);
-    fseek(fichier, 0x12, SEEK_SET);
-    fread(&colonnes, 4, 1, fichier);
-    fread(&lignes, 4, 1, fichier);
-    fseek(fichier, 0x1c, SEEK_SET);
-    fread(&bits_par_pixel, 2, 1, fichier);
+    fseek(hote, 0xa, SEEK_SET);
+    fread(&offset, 4, 1, hote);
+    fseek(hote, 0x12, SEEK_SET);
+    fread(&colonnes, 4, 1, hote);
+    fread(&lignes, 4, 1, hote);
+    fseek(hote, 0x1c, SEEK_SET);
+    fread(&bits_par_pixel, 2, 1, hote);
 
     int octets_par_pixel = bits_par_pixel / 8;
     int octets_par_ligne = colonnes * octets_par_pixel;
@@ -108,23 +112,26 @@ void extraire_depuis_image(char *nom_fichier)
         octets_par_ligne = ((octets_par_ligne / 4) + 1) * 4;
     int taille = octets_par_ligne * lignes;
 
-    unsigned char *t = NULL;
-    t = malloc(taille);
-    fseek(fichier, offset, SEEK_SET);
-    fread(t, 1, taille, fichier);
-    int nb_octets_message = 0, bits_utilises = 0;
+    char *t = malloc(taille);
+    fseek(hote, offset, SEEK_SET);
+    fread(t, 1, taille, hote);
+
+    int bits_utilises = 0;
+    *nb_octets_message = 0;
 
     for (int i = 0; i < 3; i++)
         bits_utilises |= (t[i] & 0b11) << (2 * i);
 
     for (int i = 0; i < 16; i++)
-        nb_octets_message |= (t[i + 3] & 0b11) << (2 * i);
+        *nb_octets_message |= (t[i + 3] & 0b11) << (2 * i);
 
-    int i = 19, i_message = 0, i_octet = 0;
-    char message[nb_octets_message + 1];
+    int i = 19;
+    int i_message = 0;
+    int i_octet = 0;
+    char *message = malloc(*nb_octets_message);
     char octet_message = 0;
-    while (i_message < nb_octets_message) {
-        for (int j = 0; j < bits_utilises && i_message < nb_octets_message; j++) {
+    while (i_message < *nb_octets_message) {
+        for (int j = 0; j < bits_utilises && i_message < *nb_octets_message; j++) {
             octet_message |= ((t[i] & (1 << j)) >> j) << i_octet;
 
             if (i_octet == 7) {
@@ -138,16 +145,19 @@ void extraire_depuis_image(char *nom_fichier)
         }
         i++;
     }
-    message[nb_octets_message] = '\0';
-    printf("message : %s\n", message);
 
-    fclose(fichier);
+    fclose(hote);
     free(t);
+
+    return message;
 }
 
 int main(void)
 {
-    cacher_dans_image("img.bmp", "img_modifiee.bmp", "message à cacher", 3);
-    extraire_depuis_image("img_modifiee.bmp");
+    cacher_dans_image("img.bmp", "res.bmp", "message", 2, 2);
+    int *sz = malloc(sizeof(int));
+    char *t = extraire_depuis_image("res.bmp", sz);
+    free(sz);
+    free(t);
     return 0;
 }

@@ -1,5 +1,39 @@
 #include "image_LSB.h"
 
+void cacher_fichier(char *nom_fichier_hote, char *nom_fichier_resultat,
+                    char *nom_fichier_secret, int bits_utilises)
+{
+    FILE *secret = fopen(nom_fichier_secret, "rb");
+    if (secret == NULL) {
+        printf("Fichier secret inexistant");
+        return;
+    }
+
+    fseek(secret, 0, SEEK_END);
+    int nb_octets_message = ftell(secret);
+    char *message = malloc(nb_octets_message);
+    fseek(secret, 0, SEEK_SET);
+    fread(message, 1, nb_octets_message, secret);
+
+    cacher_dans_image(nom_fichier_hote, nom_fichier_resultat, message,
+                      nb_octets_message, bits_utilises);
+}
+
+void extraire_fichier(char *nom_fichier_hote, char *nom_fichier_extrait)
+{
+    int nb_octets_message = 0;
+    char *message = extraire_depuis_image(nom_fichier_hote, &nb_octets_message);
+
+    if (message == NULL)
+        return;
+
+    FILE *fichier_extrait = fopen(nom_fichier_extrait, "wb");
+    fwrite(message, 1, nb_octets_message, fichier_extrait);
+
+    fclose(fichier_extrait);
+    free(message);
+}
+
 void cacher_dans_image(char *nom_fichier_hote, char *nom_fichier_resultat,
                        char *message, int nb_octets_message, int bits_utilises)
 {
@@ -10,7 +44,7 @@ void cacher_dans_image(char *nom_fichier_hote, char *nom_fichier_resultat,
 
     FILE *hote = fopen(nom_fichier_hote, "rb");
     if (hote == NULL) {
-        printf("Fichier inexistant\n");
+        printf("Fichier hote inexistant\n");
         return;
     }
 
@@ -74,8 +108,8 @@ char* extraire_depuis_image(char *nom_fichier_hote, int *nb_octets_message)
 {
     FILE *hote = fopen(nom_fichier_hote, "rb");
     if (hote == NULL) {
-        printf("Fichier inexistant\n");
-        return;
+        printf("Fichier hote inexistant\n");
+        return NULL;
     }
 
     int offset = 0;

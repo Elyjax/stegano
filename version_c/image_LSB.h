@@ -5,6 +5,11 @@
 #include <stdio.h>
 #include <string.h>
 
+void cacher_fichier(char *nom_fichier_hote, char *nom_fichier_resultat,
+                    char *nom_fichier_secret, int bits_utilises);
+
+void extraire_fichier(char *nom_fichier_hote, char *nom_fichier_extrait);
+
 void cacher_dans_image(char *nom_fichier_hote, char *nom_fichier_resultat,
                        char *message, int nb_octets_message, int bits_utilises);
 

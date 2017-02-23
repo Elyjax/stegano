@@ -14,23 +14,9 @@ void cacher_dans_image(char *nom_fichier_hote, char *nom_fichier_resultat,
         return;
     }
 
-    int bits_par_pixel = 0;
-    int colonnes = 0;
-    int lignes = 0;
     int offset = 0;
-    fseek(hote, 0xa, SEEK_SET);
-    fread(&offset, 4, 1, hote);
-    fseek(hote, 0x12, SEEK_SET);
-    fread(&colonnes, 4, 1, hote);
-    fread(&lignes, 4, 1, hote);
-    fseek(hote, 0x1c, SEEK_SET);
-    fread(&bits_par_pixel, 2, 1, hote);
-
-    int octets_par_pixel = bits_par_pixel / 8;
-    int octets_par_ligne = colonnes * octets_par_pixel;
-    if (octets_par_ligne  % 4 != 0)
-        octets_par_ligne = ((octets_par_ligne / 4) + 1) * 4;
-    int taille = octets_par_ligne * lignes;
+    int taille = 0;
+    initialiser(hote, &offset, &taille);
 
     if (nb_octets_message * 8 > (taille - 19) * bits_utilises) {
         printf("Message trop long pour être caché. Tentez d'augmenter bits_utilises.");
@@ -92,23 +78,9 @@ char* extraire_depuis_image(char *nom_fichier_hote, int *nb_octets_message)
         return;
     }
 
-    int bits_par_pixel = 0;
-    int colonnes = 0;
-    int lignes = 0;
     int offset = 0;
-    fseek(hote, 0xa, SEEK_SET);
-    fread(&offset, 4, 1, hote);
-    fseek(hote, 0x12, SEEK_SET);
-    fread(&colonnes, 4, 1, hote);
-    fread(&lignes, 4, 1, hote);
-    fseek(hote, 0x1c, SEEK_SET);
-    fread(&bits_par_pixel, 2, 1, hote);
-
-    int octets_par_pixel = bits_par_pixel / 8;
-    int octets_par_ligne = colonnes * octets_par_pixel;
-    if (octets_par_ligne  % 4 != 0)
-        octets_par_ligne = ((octets_par_ligne / 4) + 1) * 4;
-    int taille = octets_par_ligne * lignes;
+    int taille = 0;
+    initialiser(hote, &offset, &taille);
 
     char *t = malloc(taille);
     fseek(hote, offset, SEEK_SET);
@@ -148,4 +120,24 @@ char* extraire_depuis_image(char *nom_fichier_hote, int *nb_octets_message)
     free(t);
 
     return message;
+}
+
+void initialiser(FILE *hote, int *offset, int *taille)
+{
+    int colonnes = 0;
+    int lignes = 0;
+    int bits_par_pixel = 0;
+    fseek(hote, 0xa, SEEK_SET);
+    fread(offset, 4, 1, hote);
+    fseek(hote, 0x12, SEEK_SET);
+    fread(&colonnes, 4, 1, hote);
+    fread(&lignes, 4, 1, hote);
+    fseek(hote, 0x1c, SEEK_SET);
+    fread(&bits_par_pixel, 2, 1, hote);
+
+    int octets_par_pixel = bits_par_pixel / 8;
+    int octets_par_ligne = colonnes * octets_par_pixel;
+    if (octets_par_ligne  % 4 != 0)
+        octets_par_ligne = ((octets_par_ligne / 4) + 1) * 4;
+    *taille = octets_par_ligne * lignes;
 }

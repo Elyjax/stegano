@@ -10,4 +10,6 @@ void cacher_dans_image(char *nom_fichier_hote, char *nom_fichier_resultat,
 
 char* extraire_depuis_image(char *nom_fichier_hote, int *nb_octets_message);
 
+void initialiser(FILE *htoe, int *offset, int *taille);
+
 #endif

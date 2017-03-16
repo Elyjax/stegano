@@ -1,11 +1,11 @@
 #include "image_LSB.h"
 
 void cacher_fichier(char *nom_fichier_hote, char *nom_fichier_resultat,
-                    char *nom_fichier_secret, int bits_utilises)
+                    char *nom_fichier_secret, char bits_utilises)
 {
     FILE *secret = fopen(nom_fichier_secret, "rb");
     if (secret == NULL) {
-        printf("Fichier secret inexistant");
+        printf("Le fichier secret : %s  n'existe pas.\n", nom_fichier_secret);
         return;
     }
 
@@ -35,25 +35,28 @@ void extraire_fichier(char *nom_fichier_hote, char *nom_fichier_extrait)
 }
 
 void cacher_dans_image(char *nom_fichier_hote, char *nom_fichier_resultat,
-                       char *message, int nb_octets_message, int bits_utilises)
+                       char *message, int nb_octets_message, char bits_utilises)
 {
     if (bits_utilises > 8) {
-        printf("bits_utilises doit être inférieur à 8\n");
+        printf("bits_utilises doit être inférieur à 8 pour les fichiers bmp.\n");
         return;
     }
 
     FILE *hote = fopen(nom_fichier_hote, "rb");
     if (hote == NULL) {
-        printf("Fichier hote inexistant\n");
+        printf("Le fichier hote : %s  n'existe pas.\n", nom_fichier_hote);
         return;
     }
 
     int offset = 0;
     int taille = 0;
     initialiser(hote, &offset, &taille);
+    int bits_disponibles = (taille - 40) * bits_utilises;
 
-    if (nb_octets_message * 8 > (taille - 19) * bits_utilises) {
-        printf("Message trop long pour être caché. Tentez d'augmenter bits_utilises.");
+    if (nb_octets_message * 8 > bits_disponibles) {
+        printf("Message trop long pour être caché.\n"
+               "Bits nécessaires : %d\n"
+               "Bits disponibles : %d\n", nb_octets_message * 8, bits_disponibles);
         return;
     }
 
@@ -61,17 +64,17 @@ void cacher_dans_image(char *nom_fichier_hote, char *nom_fichier_resultat,
     fseek(hote, offset, SEEK_SET);
     fread(t, 1, taille, hote);
 
-    for (int i = 0; i < 3; i++) {
-        t[i] &= 0b11111100;
-        t[i] |= (bits_utilises & (0b11 << (2 * i))) >> (2 * i);
+    for (int i = 0; i < 8; i++) {
+        t[i] &= 0b11111110;
+        t[i] |= (bits_utilises & (1 <<  i)) >> i;
     }
 
-    for (int i = 0; i < 16; i++) {
-        t[i + 3] &= 0b11111100;
-        t[i + 3] |= (nb_octets_message & (0b11 << (2 * i))) >> (2 * i);
+    for (int i = 0; i < 32; i++) {
+        t[i + 8] &= 0b11111100;
+        t[i + 8] |= (nb_octets_message & (1 << i)) >> i;
     }
 
-    int i = 19;
+    int i = 40;
     int i_message = 0;
     int i_octet = 0;
     char octet_message = message[0];
@@ -108,7 +111,7 @@ char* extraire_depuis_image(char *nom_fichier_hote, int *nb_octets_message)
 {
     FILE *hote = fopen(nom_fichier_hote, "rb");
     if (hote == NULL) {
-        printf("Fichier hote inexistant\n");
+        printf("Le fichier hote : %s  n'existe pas.\n", nom_fichier_hote);
         return NULL;
     }
 
@@ -120,16 +123,16 @@ char* extraire_depuis_image(char *nom_fichier_hote, int *nb_octets_message)
     fseek(hote, offset, SEEK_SET);
     fread(t, 1, taille, hote);
 
-    int bits_utilises = 0;
+    char bits_utilises = 0;
     *nb_octets_message = 0;
 
-    for (int i = 0; i < 3; i++)
-        bits_utilises |= (t[i] & 0b11) << (2 * i);
+    for (int i = 0; i < 8; i++)
+        bits_utilises |= (t[i] & 1) << i;
 
-    for (int i = 0; i < 16; i++)
-        *nb_octets_message |= (t[i + 3] & 0b11) << (2 * i);
+    for (int i = 0; i < 32; i++)
+        *nb_octets_message |= (t[i + 8] & 1) << i;
 
-    int i = 19;
+    int i = 40;
     int i_message = 0;
     int i_octet = 0;
     char *message = malloc(*nb_octets_message);

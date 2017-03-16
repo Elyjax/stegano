@@ -1,4 +1,5 @@
 __pycache__
+*.pdf
 *.wav
 *.bmp
 *.png
